@@ -13,6 +13,8 @@ No server, no dependencies, no install. Just open `index.html`.
   - Japanese/kana/kanji: substring match (since Japanese doesn't use spaces between words)
   - Romaji/latin: whole-word, case-insensitive match
 - **Import from .txt** — load a word list from a plain text file (one word per line, or comma/space separated)
+- **Save & load** — export your session (word list + editor content) as a `.json` file; reload it anytime with **↑ load**
+- **Autosave** — your session is automatically saved to `localStorage` every second, so a refresh won't lose your work
 - **Rich text editor** — bold, italic, underline, lists, alignment
 - **Dark mode** — toggle with the ☀︎/☽ button; preference is saved to `localStorage`
 - **Status bar** — tracks character count (excluding whitespace), rough word count, and vocab hit ratio
@@ -26,6 +28,9 @@ No server, no dependencies, no install. Just open `index.html`.
 3. Start writing in the editor — words will move to the **used** section as you type them
 4. Remove individual words with the **✕** on each tag, or wipe everything with **✕ clear all words**
 5. Collapse either the unused or used section by clicking its header to save panel space
+6. Click **↓ save** to download a `.json` snapshot of your word list and editor content
+7. Click **↑ load** to restore a previous session from a `.json` save file
+8. Your session is also autosaved to `localStorage` every second — a small "autosaved" indicator flashes in the status bar
 
 ---
 

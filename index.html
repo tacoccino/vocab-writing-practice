@@ -120,7 +120,7 @@
   .btn.danger { border-color: var(--accent); color: var(--accent); }
   .btn.danger:hover { background: var(--accent-soft); }
 
-  #file-input { display: none; }
+  #file-input, #save-file-input { display: none; }
 
   /* ── Word Panel ── */
   #word-panel {
@@ -308,6 +308,8 @@
     font-weight: 500;
   }
 
+  .btn-divider { width: 1px; background: var(--border); margin: 0 2px; height: 20px; align-self: center; }
+
   /* ── Status bar ── */
   #status-bar {
     padding: 4px 20px;
@@ -328,6 +330,10 @@
   <h1>語彙練習</h1>
   <span>vocab writing practice</span>
   <div class="header-actions">
+    <button class="btn" id="save-btn">↓ save</button>
+    <button class="btn" id="load-btn">↑ load</button>
+    <input type="file" id="save-file-input" accept=".json">
+    <div class="btn-divider"></div>
     <button class="btn" id="import-btn">⤓ import .txt</button>
     <input type="file" id="file-input" accept=".txt">
     <button class="btn danger" id="clear-all-btn">✕ clear all words</button>
@@ -387,6 +393,7 @@
   <span id="stat-words">words: 0</span>
   <span id="stat-chars">chars: 0</span>
   <span id="stat-used">vocab used: 0 / 0</span>
+  <span id="stat-autosave" style="margin-left:auto; opacity:0; transition: opacity 0.5s;">autosaved</span>
 </div>
 
 <script>
@@ -397,6 +404,21 @@
 
   const editor = document.getElementById('editor');
   const wordInput = document.getElementById('word-input');
+
+  // ── Autosave (declared early so renderTags can call it) ───────────────────
+  let autosaveTimer = null;
+  const autosaveIndicator = document.getElementById('stat-autosave');
+
+  function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem('goi-autosave', JSON.stringify(buildSaveData()));
+        autosaveIndicator.style.opacity = '1';
+        setTimeout(() => { autosaveIndicator.style.opacity = '0'; }, 1500);
+      } catch (e) { /* quota exceeded or unavailable */ }
+    }, 1000);
+  }
 
   // ── Word management ────────────────────────────────────────────────────────
 
@@ -438,6 +460,7 @@
     document.getElementById('unused-count').textContent = unusedList.length;
     document.getElementById('used-count').textContent = usedList.length;
     updateStats();
+    scheduleAutosave();
   }
 
   function renderSection(containerId, list, type) {
@@ -578,8 +601,8 @@
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target.result;
-      // Split by newlines and/or commas and/or spaces — flexible
-      const tokens = text.split(/[\n\r,\s]+/).map(s => s.trim()).filter(Boolean);
+      // Split only on newlines and commas — NOT spaces, so multi-char words stay intact
+      const tokens = text.split(/[\n\r,]+/).map(s => s.trim()).filter(Boolean);
       tokens.forEach(addWord);
     };
     reader.readAsText(file);
@@ -607,6 +630,73 @@
     body.classList.toggle('collapsed', usedCollapsed);
     chevron.textContent = usedCollapsed ? '▶' : '▼';
   });
+
+  // ── Save / Load ────────────────────────────────────────────────────────────
+
+  function buildSaveData() {
+    return {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      words: words.map(w => w.text),
+      editorHTML: editor.innerHTML,
+    };
+  }
+
+  function applySaveData(data) {
+    if (!data || data.version !== 1) { alert('Unrecognised save file.'); return; }
+    words = (data.words || []).map(t => ({ text: t, used: false }));
+    editor.innerHTML = data.editorHTML || '';
+    recheckEditor();
+    renderTags();
+  }
+
+  // Manual save → downloads a .json file
+  document.getElementById('save-btn').addEventListener('click', () => {
+    const json = JSON.stringify(buildSaveData(), null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `goi-renshu-${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Manual load → reads a .json save file
+  document.getElementById('load-btn').addEventListener('click', () => {
+    document.getElementById('save-file-input').click();
+  });
+
+  document.getElementById('save-file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (editor.innerHTML.trim() || words.length) {
+          if (!confirm('Loading a save will replace your current session. Continue?')) return;
+        }
+        applySaveData(data);
+      } catch {
+        alert('Could not parse save file — make sure it\'s a valid .json save.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  editor.addEventListener('input', scheduleAutosave);
+
+  // Restore autosave on page load
+  try {
+    const saved = localStorage.getItem('goi-autosave');
+    if (saved) {
+      const data = JSON.parse(saved);
+      applySaveData(data);
+    }
+  } catch (e) { /* ignore */ }
 
   // ── Theme toggle ───────────────────────────────────────────────────────────
 
