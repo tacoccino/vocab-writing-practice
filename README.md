@@ -2,7 +2,7 @@
 
 A minimal browser-based writing tool for practicing Japanese using vocabulary you've studied. As you write, words from your vocab list are automatically tracked — moving from **unused** to **used** as you incorporate them into your text.
 
-No server, no dependencies, no install. Just open `index.html`.
+No server, no dependencies, no install. Just open `index.html` or use it via [GitHub Pages](https://tacoccino.github.io/vocab-writing-practice/).
 
 ---
 
