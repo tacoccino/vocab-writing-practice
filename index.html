@@ -337,6 +337,7 @@
     <button class="btn" id="import-btn">⤓ import .txt</button>
     <input type="file" id="file-input" accept=".txt">
     <button class="btn danger" id="clear-all-btn">✕ clear all words</button>
+    <button class="btn danger" id="new-btn">⊘ new</button>
     <button id="theme-toggle" title="Toggle dark mode">☀︎</button>
   </div>
 </header>
@@ -612,6 +613,15 @@
   // ── Clear all ──────────────────────────────────────────────────────────────
 
   document.getElementById('clear-all-btn').addEventListener('click', clearAllWords);
+
+  document.getElementById('new-btn').addEventListener('click', () => {
+    if (!confirm('Start fresh? This will clear everything — your words and your text.')) return;
+    words = [];
+    editor.innerHTML = '';
+    localStorage.removeItem('goi-autosave');
+    renderTags();
+    recheckEditor();
+  });
 
   // ── Collapse toggles ───────────────────────────────────────────────────────
 
